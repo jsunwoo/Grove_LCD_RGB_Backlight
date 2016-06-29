@@ -135,6 +135,7 @@ void rgb_lcd::home()
     delayMicroseconds(2000);        // this command takes a long time!
 }
 
+
 void rgb_lcd::setCursor(uint8_t col, uint8_t row)
 {
 
