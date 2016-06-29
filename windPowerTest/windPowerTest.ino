@@ -37,20 +37,18 @@
 rgb_lcd lcd;
 Servo esc;
 
-/* Variance for resistance */
+/* Variable for resistance */
 int resistanceVoltage = 0;
 int resistanceValue = 0;
 int resistanceValueForPrint = 0;
 
-/* Variance for photosensor */
+/* Variable for photosensor */
 unsigned long mainTimer;
+int windSpeedState = true;        // 스위치의 상태를 저장한다.
+int photoSensorCounter = 0;       // 스위치가 몇 번 눌렸는지 알 수 있는 변수
 float windSpeedResult = 0.0;
-int windSpeedState = true; //스위치의 상태를 저장한다.
-int photoSensorCounter = 0; //스위치가 몇 번 눌렸는지 알 수 있는 변수
-int tenSecondsCheckCounter = 0;
 float ms = 0.0;
 float circumference = 0.0;
-
 
 void setup()
 {
@@ -71,8 +69,9 @@ void setup()
 void loop()
 {
   motorControl();
+  motorPowerPrint();
   readWindSpeed();
-  valuePrint();
+  windPowerPrint();
 }
 
 void motorControl()
@@ -85,11 +84,12 @@ void motorControl()
 
 void readWindSpeed()
 {
-  mainTimer = millis() + 100; // 0.1초를 주기로 반복
+  mainTimer = millis() + 10000;
 
+  // run while loop for 1s
   while (millis() < mainTimer)
   {
-    delay(1); //바운싱 제거를 위한 1ms 지연
+    delay(1); // 바운싱 제거를 위한 1ms 지연
     if ((windSpeedState == true) && !digitalRead(PHOTO_SENSOR_PIN)) {
       photoSensorCounter++;
       windSpeedState = false;
@@ -98,21 +98,12 @@ void readWindSpeed()
       windSpeedState = true;
     }
   }
-  
-  windSpeedResult = (6 * photoSensorCounter);  // rpm 으로 보정
-  circumference = (2.0 * 22.0 / 7.0 * 0.0333); // 3.4cm날개 반경을 보정 m로 보정
-
-  // 2 x 22/7 (phi) x radian) of the wheel
-  // example : the wheel radiant is 10 cm. so the circumference is 2*22/7*10 = 62.86 cm.
-  // if the RPM number is 350 which is the length is 62.86*350/minute = 22000 cm or 220 m/minute = 220 m/ 60 second = 3.67 m/s.
-  //ms = ((3.1415 * 0.03) * windSpeed ) / 60.0 ;  // circumfrance of the circle in meters : pi * the diameter(반경)
-  ms = ((windSpeedResult * circumference) / 60.0 );
 }
 
-void valuePrint()
+void motorPowerPrint()
 {
   /* Motorpower print part */
-  lcd.setCursor(0, 0);    // set the cursor to column 0, line 1
+  lcd.setCursor(0, 0);
   lcd.print("Motorpower : ");
 
   if (resistanceValueForPrint < 10) {
@@ -126,21 +117,28 @@ void valuePrint()
   else {
     lcd.print(resistanceValueForPrint);
   }
+}
 
+void windPowerPrint()
+{
   /* Photosensor print part*/
-  tenSecondsCheckCounter++;
+  lcd.setCursor(0, 1);
 
-  // after 10 seconds initialize counter
-  if ( (tenSecondsCheckCounter % 100) == 0) {
-    lcd.setCursor(0, 1);
-    lcd.print(photoSensorCounter);
-    lcd.print(" times ");
-    lcd.print(ms);
-    lcd.print(" m/s");
+  // 2 x 22/7 (phi) x radian) of the wheel
+  // circumference of the circle in meters : pi * the diameter(반경)
+  // example : the wheel radiant is 10 cm. so the circumference is 2 * 22 / 7 * 10 = 62.86 cm.
+  circumference = (2.0 * 22.0 / 7.0 * 0.0333); // 3.4cm날개 반경을 보정 m로 보정
 
-    photoSensorCounter = 0;
-    tenSecondsCheckCounter = 0;
-  }
+  // if the RPM number is 350 which is the length is 62.86 * 350/minute = 22000 cm or 220 m/minute = 220 m/ 60 second = 3.67 m/s.
+  windSpeedResult = (6 * photoSensorCounter);  // rpm 으로 보정
+  ms = ((windSpeedResult * circumference) / 60.0 );
+
+  lcd.print(photoSensorCounter);
+  lcd.print(" times ");
+  lcd.print(ms);
+  lcd.print(" m/s");
+
+  photoSensorCounter = 0;
 }
 
 
