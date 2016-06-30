@@ -44,10 +44,10 @@ int resistanceValueForPrint = 0;
 
 /* Variable for photosensor */
 unsigned long mainTimer;
-int windSpeedState = true;        // 스위치의 상태를 저장한다.
-int photoSensorCounter = 0;       // 스위치가 몇 번 눌렸는지 알 수 있는 변수
-float windSpeedResult = 0.0;
-float ms = 0.0;
+int windSpeedState = true;
+int photoSensorCounter = 0;
+float photoSensorCounterForMinute = 0.0;
+float meterPerSecond = 0.0;
 float circumference = 0.0;
 
 void setup()
@@ -62,8 +62,8 @@ void setup()
   esc.attach(MOTOR_PIN);
 
   /* Photo Sensor setup part */
-  pinMode(PHOTO_SENSOR_PIN, INPUT);         // 스위치의 용도로 쓰기
-  digitalWrite(PHOTO_SENSOR_PIN, HIGH);     // 위한 설정 (풀업 저항 가동)
+  pinMode(PHOTO_SENSOR_PIN, INPUT);
+  digitalWrite(PHOTO_SENSOR_PIN, HIGH);
 }
 
 void loop()
@@ -121,23 +121,19 @@ void motorPowerPrint()
 
 void windPowerPrint()
 {
-  /* Photosensor print part*/
   lcd.setCursor(0, 1);
 
-  // 2 x 22/7 (phi) x radian) of the wheel
-  // circumference of the circle in meters : pi * the diameter(반경)
-  // example : the wheel radiant is 10 cm. so the circumference is 2 * 22 / 7 * 10 = 62.86 cm.
-  circumference = (2.0 * 22.0 / 7.0 * 0.0333); // 3.4cm날개 반경을 보정 m로 보정
-
+  // 2 x 22/7 (phi) x radian
+  // example : the wheel radian is 10 cm. so the circumference is 2 * (22 / 7) * 10 = 62.86 cm.
+  circumference = (2.0 * 22.0 / 7.0 * 0.0333);  // 3.33cm to 0.0333 meter
+  photoSensorCounterForMinute = (6 * photoSensorCounter); // RPM for minute not 10 seconds
   // if the RPM number is 350 which is the length is 62.86 * 350/minute = 22000 cm or 220 m/minute = 220 m/ 60 second = 3.67 m/s.
-  windSpeedResult = (6 * photoSensorCounter);  // rpm 으로 보정
-  ms = ((windSpeedResult * circumference) / 60.0 );
+  meterPerSecond = ( circumference * ( photoSensorCounterForMinute / 60.0) );
 
   lcd.print(photoSensorCounter);
   lcd.print(" times ");
-  lcd.print(ms);
+  lcd.print(meterPerSecond);
   lcd.print(" m/s");
-
   photoSensorCounter = 0;
 }
 
